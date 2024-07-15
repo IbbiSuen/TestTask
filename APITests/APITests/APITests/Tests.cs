@@ -12,51 +12,69 @@ namespace APITests.APITests
         public async Task TestGetActivities()
         {
             HttpResponseMessage response = await _client.GetAsync("Activities");
+            _loggerHelper.LogHttpRequest("GET", "Activities", response);
 
             Assert.True(response.IsSuccessStatusCode);
 
             var activities = JsonConvert.DeserializeObject<List<Activities>>(await response.Content.ReadAsStringAsync());
-
+            _loggerHelper.LogInfo($"Expected Count: 30");
+            _loggerHelper.LogInfo($"Actual Count: {activities.Count}");
             Assert.Equal(30, activities.Count);
 
-            Assert.All(activities, a => Assert.NotEqual(DateTime.Today.AddDays(-1), DateTime.Parse(a.DueDate)));
+            string activitiesJson = JsonConvert.SerializeObject(activities);
+            _loggerHelper.LogInfo($"Activities : {activitiesJson}");
 
+            Assert.All(activities, a => Assert.NotEqual(DateTime.Today.AddDays(-1), DateTime.Parse(a.DueDate)));
         }
+
 
         [Fact]
         public async Task TestPostAuthors()
         {
             var author = new Authors { Id = 1, IdBook = 2, FirstName = "John", LastName = "Garem" };
             string authorJson = JsonConvert.SerializeObject(author);
-            
+            _loggerHelper.LogInfo($"Request Body: {authorJson}");
+
             StringContent httpContent = new StringContent(authorJson, Encoding.UTF8, "application/json");
 
             HttpResponseMessage response = await _client.PostAsync("Authors", httpContent);
+            _loggerHelper.LogHttpRequest("Post", "Authors", response, authorJson);
 
             Assert.True(response.IsSuccessStatusCode);
 
             var returnedAuthor = JsonConvert.DeserializeObject<Authors>(await response.Content.ReadAsStringAsync());
 
+            string returnedAuthorJson = JsonConvert.SerializeObject(returnedAuthor);
+            _loggerHelper.LogInfo($"Expected Author: {authorJson}");
+            _loggerHelper.LogInfo($"Returned Author: {returnedAuthorJson}");
+
             Assert.True(new PropertyEqualityComparer<Authors>().Equals(author, returnedAuthor));
         }
+
 
         [Fact]
         public async Task TestPutBooks()
         {
             var book = new Books { Id = 1, Title = "New Title", Description = "New Description", PageCount = 123, Excerpt = "New Excerpt", PublishDate = DateTime.Now };
             string bookJson = JsonConvert.SerializeObject(book);
+            _loggerHelper.LogInfo($"Request Body: {bookJson}");
 
             StringContent httpContent = new StringContent(bookJson, Encoding.UTF8, "application/json");
 
             HttpResponseMessage response = await _client.PutAsync($"Books/{book.Id}", httpContent);
+            _loggerHelper.LogHttpRequest("PUT", $"Books/{book.Id}", response, bookJson);
 
             Assert.True(response.IsSuccessStatusCode);
 
             var returnedBook = JsonConvert.DeserializeObject<Books>(await response.Content.ReadAsStringAsync());
 
-            Assert.True(new PropertyEqualityComparer<Books>().Equals(book, returnedBook));
+            string returnedBookJson = JsonConvert.SerializeObject(returnedBook);
+            _loggerHelper.LogInfo($"Expected Book: {bookJson}");
+            _loggerHelper.LogInfo($"Returned Book: {returnedBookJson}");
 
+            Assert.True(new PropertyEqualityComparer<Books>().Equals(book, returnedBook));
         }
+
 
         [Theory]
         [InlineData(1, 100)]
@@ -73,9 +91,14 @@ namespace APITests.APITests
         {
             HttpResponseMessage response = await _client.GetAsync($"Books/{id}");
 
+            _loggerHelper.LogHttpRequest("GET", $"Books/{id}", response);
+
             Assert.True(response.IsSuccessStatusCode);
 
             var returnedBook = JsonConvert.DeserializeObject<Books>(await response.Content.ReadAsStringAsync());
+
+            _loggerHelper.LogInfo($"Expected Book ID: {id}, Expected Page Count: {pageCount}");
+            _loggerHelper.LogInfo($"Actual Book ID: {returnedBook.Id}, Actual Page Count: {returnedBook.PageCount}");
 
             Assert.Equal(id, returnedBook.Id);
             Assert.Equal(pageCount, returnedBook.PageCount);
@@ -84,32 +107,22 @@ namespace APITests.APITests
         [Fact]
         public async Task TestDeleteAuthor()
         {
-            LoggerHelper loggerHelper = new LoggerHelper();
-
             var author = new Authors { FirstName = "John", LastName = "Doe" };
             string authorJson = JsonConvert.SerializeObject(author);
-
-            loggerHelper.LogInfo($"Request Body: {authorJson}");
 
             StringContent httpContent = new StringContent(authorJson, Encoding.UTF8, "application/json");
 
             HttpResponseMessage postResponse = await _client.PostAsync("Authors", httpContent);
-            loggerHelper.LogInfo($"POST URL: {_client.BaseAddress}Authors");
+            _loggerHelper.LogHttpRequest("POST", "/Authors", postResponse, authorJson);
 
-            loggerHelper.LogInfo($"Expected POST Response: Success Status Code");
-            loggerHelper.LogInfo($"Actual POST Response: {postResponse.StatusCode}");
-
-            Assert.True(postResponse.IsSuccessStatusCode, $"Fail in creating author. Code:{postResponse.StatusCode} Response:{postResponse.Content.ReadAsStringAsync().Result}");
+            Assert.True(postResponse.IsSuccessStatusCode);
 
             Authors returnedAuthorPost = JsonConvert.DeserializeObject<Authors>(await postResponse.Content.ReadAsStringAsync());
 
             HttpResponseMessage deleteResponse = await _client.DeleteAsync($"Authors/{returnedAuthorPost.Id}");
-            loggerHelper.LogInfo($"DELETE URL: {_client.BaseAddress}Authors/{returnedAuthorPost.Id}");
+            _loggerHelper.LogHttpRequest("DELETE", $"Authors/{returnedAuthorPost.Id}", deleteResponse);
 
-            loggerHelper.LogInfo($"Expected DELETE Response: Success Status Code");
-            loggerHelper.LogInfo($"Actual DELETE Response: {deleteResponse.StatusCode}");
-
-            Assert.True(deleteResponse.IsSuccessStatusCode, $"Fail in deleting author. Code:{deleteResponse.StatusCode} Response:{deleteResponse.Content.ReadAsStringAsync().Result}");
+            Assert.True(deleteResponse.IsSuccessStatusCode);
         }
     }
-}
+    }

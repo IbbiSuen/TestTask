@@ -13,26 +13,28 @@ namespace APITests.APICore
     public abstract class APIBase : IDisposable
     {
         protected HttpClient _client;
+        protected LoggerHelper _loggerHelper;
 
-    protected APIBase()
-    {
-        _client = CreateHttpClient();
-    }
-
-    private HttpClient CreateHttpClient()
-    {
-        var httpClient = new HttpClient
+        protected APIBase()
         {
-            BaseAddress = new Uri("http://fakerestapi.azurewebsites.net/api/v1/")
-        };
+            _client = CreateHttpClient();
+            _loggerHelper = new LoggerHelper();
+        }
 
-        httpClient.DefaultRequestHeaders.Accept.Clear();
+        private HttpClient CreateHttpClient()
+        {
+            var httpClient = new HttpClient
+            {
+                BaseAddress = new Uri("http://fakerestapi.azurewebsites.net/api/v1/")
+            };
+
+            httpClient.DefaultRequestHeaders.Accept.Clear();
             return httpClient;
         }
 
         public void Dispose()
-    {
-        _client.Dispose();
-    }
+        {
+            _client.Dispose();
+        }
     }
 }
